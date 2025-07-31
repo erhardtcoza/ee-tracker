@@ -13,3 +13,6 @@ id = "4f1bfe27cd80437d974e36ddee082089"
 
 [site]
 bucket = "./public"
+
+[observability.logs]
+enabled = true
