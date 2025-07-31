@@ -7,8 +7,9 @@ binding = "DB"
 database_name = "ee-tracker-db"
 database_id = "9a8252de-fdce-4c7e-9109-7c6307060c13"
 
-[site]
-bucket = "./public"
+[[kv_namespaces]]
+binding = "STATIC"
+id = "4f1bfe27cd80437d974e36ddee082089"
 
 [observability.logs]
 enabled = true
