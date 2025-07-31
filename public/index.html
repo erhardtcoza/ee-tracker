@@ -8,7 +8,7 @@
     body {
       font-family: sans-serif;
       margin: 2rem;
-      max-width: 800px;
+      max-width: 900px;
     }
     table {
       width: 100%;
@@ -17,16 +17,19 @@
     }
     th, td {
       padding: 0.5rem;
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
       text-align: center;
     }
-    input, select {
+    input, select, button {
       padding: 0.5rem;
       margin: 0.5rem 0;
       width: 100%;
     }
     .form-group {
       margin-bottom: 1rem;
+    }
+    h1, h2 {
+      margin-top: 2rem;
     }
   </style>
 </head>
@@ -36,13 +39,13 @@
 
   <form id="entry-form">
     <div class="form-group">
-      <label for="instrument_id">Instrument ID</label>
-      <input type="number" id="instrument_id" name="instrument_id" required />
+      <label for="instrument_id">Select Instrument</label>
+      <select id="instrument_id" name="instrument_id" required></select>
     </div>
 
     <div class="form-group">
       <label for="date">Date</label>
-      <input type="date" id="date" name="date" required value="<?= new Date().toISOString().split('T')[0] ?>" />
+      <input type="date" id="date" name="date" required />
     </div>
 
     <div class="form-group">
