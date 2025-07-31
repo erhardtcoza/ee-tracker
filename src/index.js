@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // --- API routes ---
+    // --- API Routes ---
     if (path === "/api/instruments" && request.method === "POST") {
       const data = await request.json();
       await env.DB.prepare("INSERT INTO instruments (name, symbol, sector) VALUES (?, ?, ?)")
@@ -26,8 +26,21 @@ export default {
       return json({ instruments: instruments.results, price_entries: entries.results });
     }
 
-    // --- Serve static manually using static asset binding ---
-    return env.ASSETS.fetch(request);
+    // --- Static File Serving ---
+    if (request.method === "GET") {
+      const assetKey = path === "/" ? "index.html" : path.slice(1);
+      const file = await env.__STATIC_CONTENT.get(assetKey);
+
+      if (!file) {
+        return new Response("Not found", { status: 404 });
+      }
+
+      return new Response(file, {
+        headers: { "Content-Type": getMimeType(assetKey) }
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
   }
 };
 
@@ -36,4 +49,13 @@ function json(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json" }
   });
+}
+
+function getMimeType(filename) {
+  if (filename.endsWith(".html")) return "text/html";
+  if (filename.endsWith(".js")) return "application/javascript";
+  if (filename.endsWith(".css")) return "text/css";
+  if (filename.endsWith(".ico")) return "image/x-icon";
+  if (filename.endsWith(".json")) return "application/json";
+  return "application/octet-stream";
 }
