@@ -1,0 +1,1 @@
+// Frontend logic (Chart.js and form handling placeholder)
