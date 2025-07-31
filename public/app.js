@@ -4,17 +4,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const tableBody = document.querySelector("#portfolio-table tbody");
   const dateField = document.querySelector("#date");
 
-  // Set today's date by default
+  // Set today's date
   dateField.valueAsDate = new Date();
 
-  // Load instrument list into dropdown
   async function loadInstruments(instruments) {
     instrumentSelect.innerHTML = instruments.map(i => `
       <option value="${i.id}">${i.name}</option>
     `).join("");
   }
 
-  // Load full portfolio
   async function loadPortfolio() {
     const res = await fetch("/api/portfolio");
     const { instruments, price_entries } = await res.json();
@@ -48,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
   }
 
-  // Submit new price entry
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const data = {
@@ -66,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     form.reset();
-    dateField.valueAsDate = new Date(); // reset date
+    dateField.valueAsDate = new Date();
     await loadPortfolio();
   });
 
