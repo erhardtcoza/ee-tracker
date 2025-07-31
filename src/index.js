@@ -1,9 +1,9 @@
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // --- API Routes ---
+    // Handle API routes
     if (path === "/api/instruments" && request.method === "POST") {
       const data = await request.json();
       await env.DB.prepare("INSERT INTO instruments (name, symbol, sector) VALUES (?, ?, ?)")
@@ -26,16 +26,13 @@ export default {
       return json({ instruments: instruments.results, price_entries: entries.results });
     }
 
-    // --- Static Files ---
-    const assetPath = path === "/" ? "index.html" : path.slice(1);
-    const file = await env.__STATIC_CONTENT.get(assetPath, "stream");
-
-    if (!file) {
-      return new Response("Not found", { status: 404 });
-    }
+    // Serve static files from KV
+    const key = path === "/" ? "index.html" : path.slice(1);
+    const file = await env.STATIC.get(key);
+    if (!file) return new Response("Not found", { status: 404 });
 
     return new Response(file, {
-      headers: { "Content-Type": getMimeType(assetPath) }
+      headers: { "Content-Type": getMimeType(key) }
     });
   }
 };
