@@ -9,6 +9,7 @@ database_id = "9a8252de-fdce-4c7e-9109-7c6307060c13"
 
 [site]
 bucket = "./public"
+include = ["index.html", "app.js"]
 
 [observability.logs]
 enabled = true
