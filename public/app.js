@@ -1,15 +1,30 @@
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("#entry-form");
+  const instrumentSelect = document.querySelector("#instrument_id");
   const tableBody = document.querySelector("#portfolio-table tbody");
+  const dateField = document.querySelector("#date");
 
+  // Set today's date by default
+  dateField.valueAsDate = new Date();
+
+  // Load instrument list into dropdown
+  async function loadInstruments(instruments) {
+    instrumentSelect.innerHTML = instruments.map(i => `
+      <option value="${i.id}">${i.name}</option>
+    `).join("");
+  }
+
+  // Load full portfolio
   async function loadPortfolio() {
     const res = await fetch("/api/portfolio");
     const { instruments, price_entries } = await res.json();
 
-    // Group by instrument
-    const grouped = instruments.map((inst) => {
+    await loadInstruments(instruments);
+
+    const grouped = instruments.map(inst => {
       const entries = price_entries.filter(e => e.instrument_id === inst.id);
-      const latest = entries.at(-1); // latest entry
+      const latest = entries.at(-1);
+
       const total_value = latest ? (latest.current_price * latest.shares).toFixed(2) : 0;
       const gain_pct = latest ? (((latest.current_price - latest.buy_price) / latest.buy_price) * 100).toFixed(2) : 0;
 
@@ -17,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ...inst,
         latest,
         total_value,
-        gain_pct,
+        gain_pct
       };
     });
 
@@ -33,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
   }
 
+  // Submit new price entry
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const data = {
@@ -42,13 +58,16 @@ document.addEventListener("DOMContentLoaded", () => {
       current_price: +form.current_price.value,
       shares: +form.shares.value
     };
+
     await fetch("/api/price-entry", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    await loadPortfolio();
+
     form.reset();
+    dateField.valueAsDate = new Date(); // reset date
+    await loadPortfolio();
   });
 
   loadPortfolio();
