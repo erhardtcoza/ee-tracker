@@ -5,7 +5,7 @@ compatibility_date = "2024-06-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "ee-tracker-db"
-database_id = "your-d1-id"
+database_id = "9a8252de-fdce-4c7e-9109-7c6307060c13"
 
 [[kv_namespaces]]
 binding = "ASSETS"
