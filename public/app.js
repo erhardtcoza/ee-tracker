@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector("#entry-form");
+  const entryForm = document.querySelector("#entry-form");
+  const instrumentForm = document.querySelector("#instrument-form");
   const instrumentSelect = document.querySelector("#instrument_id");
   const tableBody = document.querySelector("#portfolio-table tbody");
   const dateField = document.querySelector("#date");
@@ -46,14 +47,15 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
   }
 
-  form.addEventListener("submit", async (e) => {
+  entryForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     const data = {
-      instrument_id: +form.instrument_id.value,
-      date: form.date.value,
-      buy_price: +form.buy_price.value,
-      current_price: +form.current_price.value,
-      shares: +form.shares.value
+      instrument_id: +entryForm.instrument_id.value,
+      date: entryForm.date.value,
+      buy_price: +entryForm.buy_price.value,
+      current_price: +entryForm.current_price.value,
+      shares: +entryForm.shares.value
     };
 
     await fetch("/api/price-entry", {
@@ -62,8 +64,27 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify(data),
     });
 
-    form.reset();
+    entryForm.reset();
     dateField.valueAsDate = new Date();
+    await loadPortfolio();
+  });
+
+  instrumentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = document.querySelector("#inst-name").value.trim();
+    const symbol = document.querySelector("#inst-symbol").value.trim();
+    const sector = document.querySelector("#inst-sector").value.trim();
+
+    if (!name) return alert("Instrument name is required");
+
+    await fetch("/api/instruments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, symbol, sector }),
+    });
+
+    instrumentForm.reset();
     await loadPortfolio();
   });
 
