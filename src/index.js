@@ -3,8 +3,8 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // --- Handle API routes first ---
-    if (path === "/api/instruments" && request.method === "POST") {
+    // --- Handle API routes ---
+    if (request.method === "POST" && path === "/api/instruments") {
       const data = await request.json();
       await env.DB.prepare("INSERT INTO instruments (name, symbol, sector) VALUES (?, ?, ?)")
         .bind(data.name, data.symbol || null, data.sector || null)
@@ -12,7 +12,7 @@ export default {
       return json({ success: true });
     }
 
-    if (path === "/api/price-entry" && request.method === "POST") {
+    if (request.method === "POST" && path === "/api/price-entry") {
       const data = await request.json();
       await env.DB.prepare("INSERT INTO price_entries (instrument_id, date, buy_price, current_price, shares) VALUES (?, ?, ?, ?, ?)")
         .bind(data.instrument_id, data.date, data.buy_price, data.current_price, data.shares)
@@ -20,40 +20,39 @@ export default {
       return json({ success: true });
     }
 
-    if (path === "/api/portfolio" && request.method === "GET") {
+    if (request.method === "GET" && path === "/api/portfolio") {
       const instruments = await env.DB.prepare("SELECT * FROM instruments").all();
       const entries = await env.DB.prepare("SELECT * FROM price_entries").all();
       return json({ instruments: instruments.results, price_entries: entries.results });
     }
 
-    // --- Serve static files manually from /public ---
-    if (path === "/" || path === "/index.html") {
-      return serveFile("index.html", "text/html");
-    }
+    // --- Serve static files from /public ---
+    try {
+      const assetPath = path === "/" ? "/index.html" : path;
+      const asset = await env.__STATIC_CONTENT.get(assetPath.slice(1));
+      if (!asset) return new Response("Not found", { status: 404 });
 
-    if (path === "/app.js") {
-      return serveFile("app.js", "application/javascript");
+      const contentType = getMimeType(assetPath);
+      return new Response(asset, {
+        headers: { "Content-Type": contentType }
+      });
+    } catch (err) {
+      return new Response("Error loading static file", { status: 500 });
     }
-
-    return new Response("Not found", { status: 404 });
   }
 };
 
-// --- Serve static files using native fetch ---
-async function serveFile(filename, contentType) {
-  const url = new URL(`../public/${filename}`, import.meta.url);
-  const res = await fetch(url);
-  const body = await res.text();
-
-  return new Response(body, {
-    headers: { "Content-Type": contentType }
-  });
-}
-
-// --- JSON helper ---
+// --- Helpers ---
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json" }
   });
+}
+
+function getMimeType(path) {
+  if (path.endsWith(".html")) return "text/html";
+  if (path.endsWith(".js")) return "application/javascript";
+  if (path.endsWith(".css")) return "text/css";
+  return "application/octet-stream";
 }
