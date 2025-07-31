@@ -9,11 +9,7 @@ database_id = "your-d1-id"
 
 [[kv_namespaces]]
 binding = "ASSETS"
-id = "4f1bfe27cd80437d974e36ddee082089" 
+id = "4f1bfe27cd80437d974e36ddee082089"
 
 [site]
 bucket = "./public"
-entry-point = "src"
-
-[build]
-command = ""
