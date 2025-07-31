@@ -3,34 +3,66 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Handle API routes
-    if (path === "/api/instruments" && request.method === "POST") {
-      const data = await request.json();
-      await env.DB.prepare("INSERT INTO instruments (name, symbol, sector) VALUES (?, ?, ?)")
-        .bind(data.name, data.symbol || null, data.sector || null)
-        .run();
-      return json({ success: true });
-    }
-
+    // Add or update a price entry
     if (path === "/api/price-entry" && request.method === "POST") {
       const data = await request.json();
-      await env.DB.prepare("INSERT INTO price_entries (instrument_id, date, buy_price, current_price, shares) VALUES (?, ?, ?, ?, ?)")
-        .bind(data.instrument_id, data.date, data.buy_price, data.current_price, data.shares)
-        .run();
+      await env.DB.prepare(
+        `INSERT INTO price_entries (name, managed, date, purchase_value, current_price, current_value)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        data.name,
+        data.managed ? 1 : 0,
+        data.date,
+        data.purchase_value,
+        data.current_price,
+        data.current_value
+      ).run();
       return json({ success: true });
     }
 
+    // Get all portfolio entries
     if (path === "/api/portfolio" && request.method === "GET") {
-      const instruments = await env.DB.prepare("SELECT * FROM instruments").all();
-      const entries = await env.DB.prepare("SELECT * FROM price_entries").all();
-      return json({ instruments: instruments.results, price_entries: entries.results });
+      const res = await env.DB.prepare(
+        "SELECT * FROM price_entries ORDER BY name, date"
+      ).all();
+      const sales = await env.DB.prepare(
+        "SELECT * FROM sales ORDER BY date DESC"
+      ).all();
+      return json({
+        price_entries: res.results,
+        sales: sales.results
+      });
     }
 
-    // Serve static files from KV
+    // Log a sale
+    if (path === "/api/sell" && request.method === "POST") {
+      const data = await request.json();
+      await env.DB.prepare(
+        `INSERT INTO sales (name, date, sell_price, sell_value, profit)
+         VALUES (?, ?, ?, ?, ?)`
+      )
+      .bind(
+        data.name,
+        data.date,
+        data.sell_price,
+        data.sell_value,
+        data.profit
+      ).run();
+      return json({ success: true });
+    }
+
+    // Delete an entry
+    if (path === "/api/delete" && request.method === "POST") {
+      const data = await request.json();
+      await env.DB.prepare("DELETE FROM price_entries WHERE id = ?").bind(data.id).run();
+      return json({ success: true });
+    }
+
+    // Serve static (KV/manual)
     const key = path === "/" ? "index.html" : path.slice(1);
     const file = await env.STATIC.get(key);
     if (!file) return new Response("Not found", { status: 404 });
-
     return new Response(file, {
       headers: { "Content-Type": getMimeType(key) }
     });
