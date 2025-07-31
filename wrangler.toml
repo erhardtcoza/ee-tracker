@@ -2,6 +2,9 @@ name = "ee-tracker"
 main = "src/index.js"
 compatibility_date = "2024-06-01"
 
+[site]
+bucket = "./public"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "ee-tracker-db"
