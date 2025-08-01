@@ -21,7 +21,7 @@ export default {
       return json({ success: true });
     }
 
-    // Get all portfolio entries
+    // Get all portfolio entries and sales
     if (path === "/api/portfolio" && request.method === "GET") {
       const res = await env.DB.prepare(
         "SELECT * FROM price_entries ORDER BY name, date"
@@ -35,19 +35,25 @@ export default {
       });
     }
 
-    // Log a sale
+    // Log a sale (includes purchase_value for profit calculation)
     if (path === "/api/sell" && request.method === "POST") {
       const data = await request.json();
+      // Defensive: require purchase_value and sell_value
+      if (!data.name || !data.date || data.sell_price === undefined || data.sell_value === undefined || data.purchase_value === undefined) {
+        return json({ error: "Missing fields" }, 400);
+      }
+      const profit = data.sell_value - data.purchase_value;
       await env.DB.prepare(
-        `INSERT INTO sales (name, date, sell_price, sell_value, profit)
-         VALUES (?, ?, ?, ?, ?)`
+        `INSERT INTO sales (name, date, sell_price, sell_value, profit, purchase_value)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
       .bind(
         data.name,
         data.date,
         data.sell_price,
         data.sell_value,
-        data.profit
+        profit,
+        data.purchase_value
       ).run();
       return json({ success: true });
     }
@@ -55,11 +61,12 @@ export default {
     // Delete an entry
     if (path === "/api/delete" && request.method === "POST") {
       const data = await request.json();
+      if (!data.id) return json({ error: "Missing id" }, 400);
       await env.DB.prepare("DELETE FROM price_entries WHERE id = ?").bind(data.id).run();
       return json({ success: true });
     }
 
-    // Serve static (KV/manual)
+    // Serve static (manual KV)
     const key = path === "/" ? "index.html" : path.slice(1);
     const file = await env.STATIC.get(key);
     if (!file) return new Response("Not found", { status: 404 });
