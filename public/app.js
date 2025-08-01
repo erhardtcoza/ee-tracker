@@ -2,8 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const diyBody = document.querySelector("#diy-table tbody");
   const managedBody = document.querySelector("#managed-table tbody");
   const soldBody = document.querySelector("#sold-table tbody");
-  const alertDiv = document.createElement("div");
-  document.body.insertBefore(alertDiv, document.querySelector(".section"));
 
   let pieChart, lineChart;
 
@@ -12,9 +10,20 @@ document.addEventListener("DOMContentLoaded", () => {
   addBtn.id = "add-entry-btn";
   addBtn.textContent = "+ Add Entry";
   addBtn.onclick = () => showEntryPopup();
+  addBtn.style.position = "fixed";
+  addBtn.style.bottom = "40px";
+  addBtn.style.right = "40px";
+  addBtn.style.background = "#e2001a";
+  addBtn.style.color = "#fff";
+  addBtn.style.fontWeight = "bold";
+  addBtn.style.padding = "18px 36px";
+  addBtn.style.borderRadius = "30px";
+  addBtn.style.fontSize = "1.1em";
+  addBtn.style.boxShadow = "0 4px 24px #0002";
+  addBtn.style.zIndex = 1200;
   document.body.appendChild(addBtn);
 
-  // Helper Functions
+  // Helpers
   function colorize(val) {
     if (val > 0) return `<span style="color:green;font-weight:bold;">+R${Number(val).toFixed(2)}</span>`;
     if (val < 0) return `<span style="color:red;font-weight:bold;">R${Number(val).toFixed(2)}</span>`;
@@ -247,13 +256,12 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     });
 
-    // Sell
+    // Sell (total sale value only, like EasyEquities)
     document.querySelectorAll(".sell-btn").forEach(btn => {
       btn.onclick = () => {
         const name = btn.dataset.name;
         const orig_pv = parseFloat(btn.dataset.pv);
         const holding = parseFloat(btn.dataset.hold);
-        const orig_price = parseFloat(btn.dataset.origprice);
         const saleDate = new Date().toISOString().slice(0, 10);
 
         const popup = document.createElement("div");
@@ -271,10 +279,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <h3>Sell ${name}</h3>
             <label>Date</label>
             <input type="date" id="sell-date" value="${saleDate}"/>
-            <label>Sell Price (per share)</label>
-            <input type="number" id="sell-price" step="0.01" required/>
-            <label>Amount (shares)</label>
-            <input type="number" id="sell-amount" step="0.0001" value="${holding}" required/>
+            <label>Sale Value (Total, R)</label>
+            <input type="number" id="sell-value" step="0.01" required/>
             <br/>
             <button id="confirm-sell">Confirm Sell</button>
             <button id="close-sell">Cancel</button>
@@ -284,14 +290,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         popup.querySelector("#confirm-sell").onclick = async () => {
           const date = popup.querySelector("#sell-date").value;
-          const sell_price = +popup.querySelector("#sell-price").value;
-          const amount = +popup.querySelector("#sell-amount").value;
-          const sell_value = sell_price * amount;
+          const sell_value = +popup.querySelector("#sell-value").value;
           const profit = sell_value - orig_pv;
           await fetch("/api/sell", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, date, sell_price, sell_value, profit, purchase_value: orig_pv }),
+            body: JSON.stringify({ name, date, sell_value, profit, purchase_value: orig_pv }),
           });
           popup.remove();
           await loadPortfolio();
@@ -351,45 +355,30 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!instrumentHistory[e.name]) instrumentHistory[e.name] = [];
       instrumentHistory[e.name].push({ date: e.date, value: e.current_value });
     });
-
-    Object.values(instrumentHistory).forEach(arr => arr.sort((a, b) => new Date(a.date) - new Date(b.date)));
     const allDates = Array.from(new Set(entries.map(e => e.date))).sort();
-    const datasets = Object.entries(instrumentHistory).map(([name, values]) => {
-      const data = allDates.map(d => {
-        const found = values.find(v => v.date === d);
+    const datasets = Object.entries(instrumentHistory).map(([name, vals]) => {
+      const data = allDates.map(date => {
+        const found = vals.find(v => v.date === date);
         return found ? found.value : null;
       });
-      return {
-        label: name,
-        data,
-        borderWidth: 2,
-        fill: false,
-        tension: 0.3
-      };
+      return { label: name, data, spanGaps: true };
     });
 
     if (lineChart) lineChart.destroy();
     lineChart = new Chart(document.getElementById("lineChart"), {
       type: "line",
-      data: {
-        labels: allDates,
-        datasets
-      },
+      data: { labels: allDates, datasets },
       options: {
+        plugins: { legend: { position: "bottom" } },
         responsive: true,
         maintainAspectRatio: false,
-        aspectRatio: 3.2,
-        plugins: {
-          legend: { position: "bottom" },
-        },
-        interaction: {
-          mode: "nearest",
-          axis: "x",
-          intersect: false
-        }
+        aspectRatio: 3,
+        elements: { point: { radius: 2 } },
+        scales: { y: { beginAtZero: true } }
       }
     });
   }
 
+  // Load data on start
   loadPortfolio();
 });
