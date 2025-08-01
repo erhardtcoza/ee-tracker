@@ -35,22 +35,20 @@ export default {
       });
     }
 
-    // Log a sale (includes purchase_value for profit calculation)
+    // Log a sale (only total sale value and purchase_value)
     if (path === "/api/sell" && request.method === "POST") {
       const data = await request.json();
-      // Defensive: require purchase_value and sell_value
-      if (!data.name || !data.date || data.sell_price === undefined || data.sell_value === undefined || data.purchase_value === undefined) {
+      if (!data.name || !data.date || data.sell_value === undefined || data.purchase_value === undefined) {
         return json({ error: "Missing fields" }, 400);
       }
       const profit = data.sell_value - data.purchase_value;
       await env.DB.prepare(
-        `INSERT INTO sales (name, date, sell_price, sell_value, profit, purchase_value)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO sales (name, date, sell_value, profit, purchase_value)
+         VALUES (?, ?, ?, ?, ?)`
       )
       .bind(
         data.name,
         data.date,
-        data.sell_price,
         data.sell_value,
         profit,
         data.purchase_value
